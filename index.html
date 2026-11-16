@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบติดตามและวิเคราะห์ข้อมูลรีเจ็ค WG6</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Prompt',sans-serif}
+body{background:#f8fafc;color:#1e293b}
+header{background:linear-gradient(135deg,#2e1065,#5b21b6,#1e1b4b);color:#fff}
+.overlay{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:56px;height:56px;border:2px solid #eab308;border-radius:14px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fef08a;overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:contain;display:none}
+h1{font-size:1.35rem}h1 span{color:#fef08a}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;font-size:.78rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25)}
+.dot{width:8px;height:8px;border-radius:50%;background:#fbbf24}.dot.ok{background:#10b981}.dot.err{background:#ef4444}
+.btn{padding:8px 14px;border-radius:10px;border:none;font-size:.85rem;font-weight:600;cursor:pointer}
+.btn-set{background:rgba(255,255,255,.15);color:#fff;border:1px solid #eab308}
+.btn-pri{background:#5b21b6;color:#fff}.btn-pri:hover{background:#2e1065}
+.btn-gold{background:#eab308;color:#1e1b4b}
+.btn-out{background:#fff;border:1px solid #cbd5e1;color:#334155}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:5px 10px;font-size:0.78rem;border-radius:6px}
+nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 24px 0;display:flex;gap:8px;overflow-x:auto}
+.tab{padding:10px 20px;border:none;background:none;font-weight:600;color:#64748b;border-radius:10px 10px 0 0;cursor:pointer;white-space:nowrap}
+.tab.active{background:#5b21b6;color:#fff;border-bottom:3px solid #eab308}
+.wrap{max-width:1240px;margin:20px auto;padding:0 16px}
+.hide{display:none!important}
+.card{background:#fff;border-radius:14px;padding:18px;border:1px solid #ede9fe;box-shadow:0 2px 6px rgba(0,0,0,.04);margin-bottom:18px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+select,input,textarea{padding:8px 11px;border:1px solid #cbd5e1;border-radius:9px;font-size:.88rem;outline:none;width:100%}
+.filters select{width:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:#fff;padding:14px;border-radius:12px;border:1px solid #ede9fe;border-left:5px solid #5b21b6}
+.kpi.g{border-left-color:#eab308}.kpi.gr{border-left-color:#10b981}.kpi.am{border-left-color:#f59e0b}
+.kpi.r{border-left-color:#dc2626;background:#fef2f2}
+.kpi-clickable{cursor:pointer;transition:transform .1s}
+.kpi-clickable:hover{transform:translateY(-2px)}
+.kpi small{color:#64748b;font-size:.76rem;font-weight:600}
+.kpi div{font-size:1.4rem;font-weight:700;margin-top:2px;color:#2e1065}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+@media(max-width:550px){.charts{grid-template-columns:1fr}}
+.ctitle{font-weight:700;color:#2e1065;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #f1f5f9}
+.brow{margin-bottom:10px}.binfo{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px}
+.btrack{height:12px;background:#f1f5f9;border-radius:6px;overflow:hidden}.bfill{height:100%;border-radius:6px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:16px}
+.fg{display:flex;flex-direction:column;gap:4px}.fg label{font-size:.82rem;font-weight:600}
+.calc{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.pct{background:#fff;border:1px solid #eab308;border-radius:9px;padding:6px 10px;font-size:.8rem;font-weight:600}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;max-height:380px;overflow-y:auto;padding:10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px}
+.iitem{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;display:flex;justify-content:space-between;align-items:center}
+.iitem.sel{border-color:#5b21b6;background:#f5f3ff}
+.ilbl{display:flex;align-items:center;gap:7px;font-size:.82rem;cursor:pointer;flex:1}
+.cdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bdet{background:#ede9fe;color:#2e1065;border:none;padding:3px 8px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;padding:14px;z-index:999}
+.mbox{background:#fff;border-radius:16px;width:100%;max-width:550px;padding:20px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 25px rgba(0,0,0,0.2)}
+.mhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:14px}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0}
+.cbox{background:#1e1b4b;color:#fff;border-radius:10px;padding:10px;margin:10px 0}
+.cbox textarea{width:100%;height:120px;background:#0f172a;color:#a5f3fc;font-family:monospace;font-size:.75rem;margin-top:6px}
+.cstat{padding:8px 12px;border-radius:8px;background:#f1f5f9;font-size:.8rem;display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.table-responsive{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;text-align:left}
+th,td{padding:10px 12px;border-bottom:1px solid #e2e8f0}
+th{background:#f8fafc;color:#2e1065;font-weight:700}
+tr:hover{background:#f8fafc}
+.tag-due{display:inline-block;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:600}
+.tag-due.ok{background:#fef3c7;color:#d97706}
+.tag-due.over{background:#fee2e2;color:#dc2626}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="overlay">
+    <div class="brand">
+      <div class="logo"><img id="cLogo"><span id="dLogo">WG6</span></div>
+      <div>
+        <h1>ระบบติดตามและวิเคราะห์ข้อมูลรีเจ็ค <span>WG6</span></h1>
+        <div style="font-size:.82rem;color:#ddd6fe">เหรียญทองการพิมพ์ (WG6) & KIM PAI</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="badge"><span class="dot" id="hDot"></span><span id="hTxt">โหมดข้อมูลในเครื่อง</span></div>
+      <button type="button" class="btn btn-set" onclick="openModal('mSet')">⚙️ ตั้งค่า</button>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <button type="button" id="tSum" class="tab active" onclick="goTab('sum')">📊 หน้าสรุป</button>
+  <button type="button" id="tRec" class="tab" onclick="goTab('rec')">📝 บันทึกข้อมูลรีเจ็ค</button>
+  <button type="button" id="tList" class="tab" onclick="goTab('list')">📋 รายการทั้งหมด</button>
+</nav>
+
+<!-- หน้า 1: สรุป -->
+<div id="pSum" class="wrap">
+  <div class="card filters">
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <select id="fMac" onchange="draw()"><option value="">เครื่องจักร/แผนกทั้งหมด</option></select>
+      <select id="fCus" onchange="draw()"><option value="">บริษัทลูกค้าทั้งหมด</option></select>
+      <select id="fSup" onchange="draw()"><option value="">หัวหน้าเครื่องทั้งหมด</option></select>
+      <select id="fCap" onchange="draw()">
+        <option value="">สถานะกำหนดส่ง CAPA ทั้งหมด</option>
+        <option value="อยู่ในกำหนด">อยู่ในกำหนด</option>
+        <option value="เลยกำหนด">เลยกำหนด (Overdue)</option>
+      </select>
+    </div>
+    <button type="button" class="btn btn-pri" onclick="syncData(true)">🔄 รีเฟรชข้อมูล</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><small>ยอดรีเจ็คทั้งหมด (ชิ้น)</small><div id="kRej">0</div></div>
+    <div class="kpi g"><small>ของเสียเฉลี่ย (%)</small><div id="kWst">0.00%</div></div>
+    <div class="kpi gr"><small>ของดีที่คัดได้เฉลี่ย (%)</small><div id="kGd">0.00%</div></div>
+    <div class="kpi am"><small>CAPA : อยู่ในกำหนด</small><div id="kInDue" style="color:#d97706">0 เคส</div></div>
+    <div class="kpi r kpi-clickable" onclick="openOverdueModal()" title="คลิกเพื่อดูรายการ PT ที่เลยกำหนด">
+      <small style="color:#b91c1c">⚠️ CAPA : เลยกำหนด (คลิกดู PT)</small>
+      <div id="kOver" style="color:#dc2626">0 เคส</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><div class="ctitle">🔥 ปัญหาที่พบมากที่สุด (Top Issues)</div><div id="cTop"></div></div>
+    <div class="card"><div class="ctitle">📊 สรุปปัญหาทั้งหมดที่พบ</div><div id="cAll"></div></div>
+    <div class="card"><div class="ctitle">⚙️ ยอดรีเจ็คแยกตามเครื่องจักร / แผนก</div><div id="cMac"></div></div>
+    <div class="card"><div class="ctitle">🏢 ยอดรีเจ็คแยกตามบริษัทลูกค้า</div><div id="cCus"></div></div>
+  </div>
+</div>
+
+<!-- หน้า 2: บันทึก / แก้ไข -->
+<div id="pRec" class="wrap hide">
+  <div class="card">
+    <h2 id="formTitle" style="color:#2e1065;margin-bottom:14px;font-size:1.15rem">ฟอร์มบันทึกข้อมูลรีเจ็ค WG6</h2>
+    <form id="rForm" onsubmit="saveRec(event)">
+      <input type="hidden" id="editIndex" value="-1">
+      <div class="fgrid">
+        <div class="fg"><label>หมายเลข CAPA *</label><input type="text" id="iCapa" required placeholder="CAPA-2026-001"></div>
+        <div class="fg"><label>หมายเลขรับรีเจ็ค *</label><input type="text" id="iRecNo" required placeholder="REC-69-001"></div>
+        <div class="fg"><label>จ็อบงาน (Job No.) *</label><input type="text" id="iJob" required placeholder="J260501"></div>
+        <div class="fg"><label>ชื่องาน *</label><input type="text" id="iJName" required></div>
+        <div class="fg"><label>ชื่อบริษัทลูกค้า *</label><input type="text" id="iCus" required></div>
+        <div class="fg"><label>หัวหน้าเครื่อง *</label><input type="text" id="iSup" required></div>
+        <div class="fg"><label>หมายเลขเครื่องจักร / แผนก *</label><select id="iMac" required><option value="">-- เลือกเครื่องจักร/แผนก --</option></select></div>
+        <div class="fg"><label>วันที่กำหนดส่ง (CAPA Due Date) *</label>
+          <input type="date" id="iDue" required onchange="chkDue()">
+          <small id="dueHint" style="font-weight:600"></small>
+        </div>
+      </div>
+
+      <div class="calc">
+        <div class="fg"><label>จำนวนที่ส่ง (ชิ้น) *</label><input type="number" id="qSent" min="1" required oninput="calc()"></div>
+        <div class="fg"><label>จำนวนที่รีเจ็ค (ชิ้น) *</label><input type="number" id="qRej" min="0" required oninput="calc()"></div>
+        <div class="fg"><label>จำนวนของเสีย (ชิ้น) *</label><input type="number" id="qWst" min="0" required oninput="calc()"></div>
+        <div class="fg"><label>จำนวนของดีที่คัดได้ (ชิ้น) *</label><input type="number" id="qGd" min="0" required oninput="calc()"></div>
+        <div class="fg"><label>คำนวณเปอร์เซ็นต์</label>
+          <div class="pct">
+            <div>รีเจ็ค: <span id="pRej" style="color:#5b21b6">0.00%</span></div>
+            <div>เสีย: <span id="pWst" style="color:#e11d48">0.00%</span> | ดี: <span id="pGd" style="color:#059669">0.00%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg" style="margin-bottom:16px">
+        <label>เลือกปัญหาที่พบ (คลิกเพื่อระบุจำนวน รายละเอียด และแนบรูปภาพ)</label>
+        <div id="iBox" class="igrid"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="btn btn-out" onclick="clrForm()">ล้างข้อมูล / ยกเลิก</button>
+        <button type="submit" id="btnSubmit" class="btn btn-pri">💾 บันทึกข้อมูลรีเจ็ค</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- หน้า 3: รายการที่บันทึกทั้งหมด -->
+<div id="pList" class="wrap hide">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="color:#2e1065;font-size:1.15rem">📋 รายการข้อมูลรีเจ็คทั้งหมด</h2>
+      <button type="button" class="btn btn-pri" onclick="goTab('rec')">➕ บันทึกเคสใหม่</button>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>CAPA No.</th>
+            <th>ชื่องาน / ลูกค้า</th>
+            <th>เครื่อง</th>
+            <th>Due Date & Status</th>
+            <th>ส่ง / รีเจ็ค</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="listTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แสดงรายการ PT ที่เลยกำหนด -->
+<div id="mOverdue" class="modal hide">
+  <div class="mbox" style="max-width:750px">
+    <div class="mhead">
+      <h3 style="color:#dc2626">⚠️ รายการ PT ที่ค้างตอบและเลยกำหนด (Overdue)</h3>
+      <button type="button" class="btn btn-out" style="padding:4px 10px" onclick="closeModal('mOverdue')">✕</button>
+    </div>
+    <div class="table-responsive" style="max-height:60vh;overflow-y:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>CAPA / PT No.</th>
+            <th>ชื่องาน / ลูกค้า</th>
+            <th>เครื่อง</th>
+            <th>Due Date</th>
+            <th>รีเจ็ค</th>
+          </tr>
+        </thead>
+        <tbody id="overdueModalBody"></tbody>
+      </table>
+    </div>
+    <div class="mfoot">
+      <button type="button" class="btn btn-pri" onclick="closeModal('mOverdue')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ตั้งค่า -->
+<div id="mSet" class="modal hide">
+  <div class="mbox">
+    <div class="mhead"><h3 style="color:#2e1065">⚙️ ตั้งค่า & Apps Script</h3><button type="button" class="btn btn-out" style="padding:4px 10px" onclick="closeModal('mSet')">✕</button></div>
+    <div class="fg">
+      <label>Google Apps Script Web App URL</label>
+      <input type="text" id="sUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="cstat">
+        <span id="mStat">⚪ สถานะ: ยังไม่ได้เชื่อมต่อ URL</span>
+        <button type="button" class="btn btn-out" style="padding:4px 10px;font-size:.75rem" onclick="testConn()">ทดสอบการเชื่อมต่อ</button>
+      </div>
+    </div>
+    <div class="cbox">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:#fef08a">
+        <span>📜 โค้ด Google Apps Script</span>
+        <button type="button" class="btn btn-gold" style="padding:3px 9px;font-size:.74rem" onclick="copyCode()">📋 คัดลอก</button>
+      </div>
+      <textarea id="codeTxt" readonly></textarea>
+    </div>
+    <div class="fg" style="margin-bottom:10px"><label>เปลี่ยนภาพโลโก้บริษัท</label><input type="file" accept="image/*" onchange="upImg(event,'logo')"></div>
+    <div class="fg"><label>เปลี่ยนภาพพื้นหลังหัวข้อ</label><input type="file" accept="image/*" onchange="upImg(event,'bg')"></div>
+    <div class="mfoot">
+      <button type="button" class="btn btn-out" onclick="rstImg()">รีเซ็ตภาพ</button>
+      <button type="button" class="btn btn-pri" onclick="saveSet()">บันทึกการตั้งค่า</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal รายละเอียดปัญหา -->
+<div id="mIss" class="modal hide">
+  <div class="mbox" style="max-width:420px">
+    <div class="mhead"><h3 id="mIssT" style="color:#2e1065;font-size:1rem">รายละเอียดปัญหา</h3><button type="button" class="btn btn-out" style="padding:4px 10px" onclick="closeModal('mIss')">✕</button></div>
+    <div class="fg" style="margin-bottom:10px"><label>จำนวนที่พบ (ชิ้น)</label><input type="number" id="mIQty" min="0"></div>
+    <div class="fg" style="margin-bottom:10px"><label>รายละเอียดเพิ่มเติม</label><textarea id="mIDesc" rows="3"></textarea></div>
+    <div class="fg"><label>แนบรูปภาพตัวอย่าง</label><input type="file" id="mIFile" accept="image/*" onchange="prevImg(event)"><img id="mIPrev" style="max-height:110px;margin-top:6px;border-radius:8px;display:none"></div>
+    <div class="mfoot">
+      <button type="button" class="btn btn-out" onclick="closeModal('mIss')">ยกเลิก</button>
+      <button type="button" class="btn btn-pri" onclick="okIss()">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_CODE = `const SHEET_NAME = "Reject_Data_WG6";
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(["วันที่บันทึก","หมายเลข CAPA","หมายเลขรับรีเจ็ค","จ็อบงาน","ชื่องาน","บริษัทลูกค้า","หัวหน้าเครื่อง","เครื่องจักร/แผนก","CAPA Due Date","จำนวนส่ง","จำนวนรีเจ็ค","จำนวนของเสีย","ของดีที่คัดได้","% รีเจ็ค","% ของเสีย","% ของดี","สรุปปัญหา","JSON ปัญหา"]);
+      sheet.getRange(1,1,1,18).setFontWeight("bold").setBackground("#ede9fe");
+    }
+    const d = JSON.parse(e.postData.contents);
+    const s = Number(d.qtySent)||0, r = Number(d.qtyReject)||0, w = Number(d.qtyWaste)||0, g = Number(d.qtyGood)||0;
+    let txt = [], clean = {};
+    if (d.issues) Object.entries(d.issues).forEach(([k,v]) => {
+      txt.push(k+": "+(v.qty||0)+" ชิ้น"+(v.desc?" ("+v.desc+")":""));
+      clean[k] = {qty: Number(v.qty)||0, desc: v.desc||""};
+    });
+    sheet.appendRow([new Date(),d.capaNo,d.receiveNo,d.jobNo,d.jobName,d.customer,d.supervisor,d.machine,d.capaDueDate||"",s,r,w,g,s?(r/s*100).toFixed(2)+"%":"0%",s?(w/s*100).toFixed(2)+"%":"0%",s?(g/s*100).toFixed(2)+"%":"0%",txt.join(" | "),JSON.stringify(clean)]);
+    return ContentService.createTextOutput(JSON.stringify({status:"success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) { return ContentService.createTextOutput(JSON.stringify({status:"error",message:err.toString()})).setMimeType(ContentService.MimeType.JSON); }
+}
+function doGet() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);
+    const rows = sheet.getDataRange().getValues(), out = [];
+    for (let i = rows.length - 1; i >= 1; i--) {
+      const r = rows[i]; let iss = {}; try { iss = r[17] ? JSON.parse(r[17]) : {}; } catch(e){}
+      const due = r[8] instanceof Date ? Utilities.formatDate(r[8], Session.getScriptTimeZone(), "yyyy-MM-dd") : String(r[8]||"");
+      out.push({capaNo:String(r[1]),receiveNo:String(r[2]),jobNo:String(r[3]),jobName:String(r[4]),customer:String(r[5]),supervisor:String(r[6]),machine:String(r[7]),capaDueDate:due,qtySent:Number(r[9])||0,qtyReject:Number(r[10])||0,qtyWaste:Number(r[11])||0,qtyGood:Number(r[12])||0,issues:iss});
+    }
+    return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) { return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON); }
+}`;
+
+const MACS = ["2101","2103","2104","2105","2106","2107","3131","3132","3165","3161","3166","5104","5105","5106","4101","4102","4103","4104","4105","4106","4107","4108","6101","6103","6104","6106","6107","6108","6109","6110","คลังสินค้า","ประกันคุณภาพ","วางแผนการผลิต","พัฒนาผลิตภัณฑ์"];
+const ISS = ["สีไม่ได้มาตรฐาน","พิมพ์ไม่ตรง","สีเลอะ","รอยขูดขีด","รอยชักกระดาษ","รอยกดทับ","จุดขาว","ขี้หมึก","ขี้กระดาษ","รอยผ้ายาง","โค๊ทไม่ได้มาตรฐาน","โค๊ทไม่เงา","ค่าความเงาไม่ได้มาตรฐาน","เว้นUVไม่ตรงตำแหน่ง","UVไม่ตรง","UVเป็นรอย","silk screenไม่ตรงตำแหน่ง","silk screenไม่ตรง","silk screen เป็นรอย","เส้นพับแตก","ปั๊มไม่ขาด","ปั๊มไม่ตรง","ปั๊มกล่องเกย","ปั๊มกล่องห่าง","ปั๊มกล่องเอียง","กล่องเป็นรอย","กล่องขาด","ปั๊มนูนไม่ตรงตำแหน่ง","ปั๊มนูนไม่ได้มาตรฐาน","ปั๊มนูนไม่ตรง","ปั๊มเคไม่ตรงตำแหน่ง","ปั๊มเคไม่ตรง","ปั๊มเคไม่ได้มาตรฐาน","กาวล่อน","กาวติด","กาวเลอะ","กล่องไม่มีกาว","ติดกล่องเกย","ติดกล่องห่าง","ติดกล่องเหลื่อม","รูปแบบงานไม่ถูกต้อง"];
+const COLS = ["#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#10b981","#06b6d4","#3b82f6","#6366f1","#8b5cf6","#a855f7","#d946ef","#ec4899","#f43f5e","#dc2626","#ea580c","#d97706","#ca8a04","#65a30d","#059669","#0891b2","#2563eb","#4f46e5","#7c3aed","#9333ea","#c026d3","#db2777","#e11d48","#991b1b","#9a3412","#92400e","#854d0e","#3f6212","#065f46","#155e75","#1e40af","#3730a3","#5b21b6","#6b21a8","#86198f","#475569"];
+const ICOL = {}; ISS.forEach((n,i) => ICOL[n] = COLS[i % COLS.length]);
+
+let recs = [
+  {capaNo:"CAPA-2026-001",receiveNo:"REC-01",jobNo:"J2601",jobName:"กล่องสบู่",customer:"บริษัทนีโอคอสเมด",supervisor:"คุณสมชาย",machine:"2101",capaDueDate:"2026-11-10",qtySent:5000,qtyReject:150,qtyWaste:50,qtyGood:4800,issues:{"สีไม่ได้มาตรฐาน":{qty:100},"รอยขูดขีด":{qty:50}}},
+  {capaNo:"CAPA-2026-002",receiveNo:"REC-02",jobNo:"J2602",jobName:"กล่องอาหารเสริม",customer:"บริษัทบิวตี้แคร์",supervisor:"คุณวิชัย",machine:"3131",capaDueDate:"2026-11-12",qtySent:10000,qtyReject:320,qtyWaste:120,qtyGood:9560,issues:{"พิมพ์ไม่ตรง":{qty:200},"กาวเลอะ":{qty:120}}},
+  {capaNo:"CAPA-2026-003",receiveNo:"REC-03",jobNo:"J2603",jobName:"กล่องเซรั่ม",customer:"บริษัทโกลด์เด้น",supervisor:"คุณธนพล",machine:"4101",capaDueDate:"2026-11-25",qtySent:8000,qtyReject:210,qtyWaste:80,qtyGood:7710,issues:{"ปั๊มเคไม่ตรง":{qty:210}}}
+];
+let selIss = {}, curIss = "", tImg = "";
+
+window.onload = () => {
+  document.getElementById("codeTxt").value = GAS_CODE;
+  MACS.forEach(m => {
+    document.getElementById("iMac").innerHTML += `<option value="${m}">${m}</option>`;
+    document.getElementById("fMac").innerHTML += `<option value="${m}">${m}</option>`;
+  });
+  mkIss();
+  if(localStorage.getItem("wg6_logo")) setLogo(localStorage.getItem("wg6_logo"));
+  if(localStorage.getItem("wg6_bg")) document.getElementById("hdr").style.backgroundImage = `url('${localStorage.getItem("wg6_bg")}')`;
+  const u = localStorage.getItem("wg6_url");
+  if(u){ document.getElementById("sUrl").value = u; syncData(false); } else { updConn("local"); draw(); }
+};
+
+function getStat(r) {
+  if(r.capaDueDate) {
+    const now = new Date(); now.setHours(0,0,0,0);
+    const due = new Date(r.capaDueDate); due.setHours(0,0,0,0);
+    if(!isNaN(due) && now > due) return "เลยกำหนด";
+  }
+  return "อยู่ในกำหนด";
+}
+
+function chkDue() {
+  const du = document.getElementById("iDue").value, h = document.getElementById("dueHint");
+  if(!du){ h.innerText=""; return; }
+  const eff = getStat({capaDueDate:du});
+  h.innerText = eff==="เลยกำหนด" ? "⚠️ สถานะที่จะแสดง: เลยกำหนด" : "⏳ สถานะที่จะแสดง: อยู่ในกำหนด";
+  h.style.color = eff==="เลยกำหนด" ? "#dc2626" : "#d97706";
+}
+
+function goTab(t) {
+  document.getElementById("pSum").classList.toggle("hide", t!=="sum");
+  document.getElementById("pRec").classList.toggle("hide", t!=="rec");
+  document.getElementById("pList").classList.toggle("hide", t!=="list");
+  document.getElementById("tSum").classList.toggle("active", t==="sum");
+  document.getElementById("tRec").classList.toggle("active", t==="rec");
+  document.getElementById("tList").classList.toggle("active", t==="list");
+  if(t==="sum") draw();
+  if(t==="list") renderTableList();
+}
+
+function openModal(id) { document.getElementById(id).classList.remove("hide"); }
+function closeModal(id) { document.getElementById(id).classList.add("hide"); }
+
+function openOverdueModal() {
+  const tbody = document.getElementById("overdueModalBody");
+  const overdueList = recs.filter(r => getStat(r) === "เลยกำหนด");
+  if(!overdueList.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:30px">ไม่มีรายการ PT ที่เลยกำหนด</td></tr>`;
+  } else {
+    tbody.innerHTML = overdueList.map(r => `
+      <tr>
+        <td><strong>${r.capaNo}</strong><br><small style="color:#64748b">รับรีเจ็ค: ${r.receiveNo||'-'}</small></td>
+        <td>${r.jobName || '-'}<br><small style="color:#64748b">${r.customer || '-'}</small></td>
+        <td><span style="background:#ede9fe;color:#5b21b6;padding:2px 6px;border-radius:4px;font-weight:600">${r.machine}</span></td>
+        <td><span class="tag-due over">${r.capaDueDate || '-'}</span></td>
+        <td>รีเจ็ค: <strong style="color:#dc2626">${Number(r.qtyReject||0).toLocaleString()} ชิ้น</strong></td>
+      </tr>
+    `).join("");
+  }
+  openModal("mOverdue");
+}
+
+function mkIss() {
+  const b = document.getElementById("iBox"); b.innerHTML = "";
+  ISS.forEach((n,i) => {
+    b.innerHTML += `<div class="iitem" id="ib-${i}"><label class="ilbl"><input type="checkbox" id="ck-${i}" onchange="tgIss(${i},'${n}')"><span class="cdot" style="background:${ICOL[n]}"></span><span>${n}</span></label><button type="button" id="bd-${i}" class="bdet hide" onclick="edIss('${n}')">ระบุจำนวน</button></div>`;
+  });
+}
+function tgIss(i,n) {
+  const c = document.getElementById(`ck-${i}`).checked;
+  document.getElementById(`ib-${i}`).classList.toggle("sel", c);
+  document.getElementById(`bd-${i}`).classList.toggle("hide", !c);
+  if(c){ selIss[n]={qty:0,desc:"",img:""}; edIss(n); } else delete selIss[n];
+}
+function edIss(n) {
+  curIss = n;
+  document.getElementById("mIssT").innerText = "ปัญหา: " + n;
+  document.getElementById("mIQty").value = selIss[n]?.qty || "";
+  document.getElementById("mIDesc").value = selIss[n]?.desc || "";
+  tImg = selIss[n]?.img || "";
+  const p = document.getElementById("mIPrev");
+  p.src = tImg; p.style.display = tImg ? "block" : "none";
+  document.getElementById("mIFile").value = "";
+  openModal("mIss");
+}
+function prevImg(e) {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev => { tImg = ev.target.result; const p = document.getElementById("mIPrev"); p.src = tImg; p.style.display = "block"; };
+  rd.readAsDataURL(f);
+}
+function okIss() {
+  const q = parseInt(document.getElementById("mIQty").value)||0, d = document.getElementById("mIDesc").value;
+  selIss[curIss] = {qty:q, desc:d, img:tImg};
+  const i = ISS.indexOf(curIss);
+  if(i>-1) document.getElementById(`bd-${i}`).innerText = q>0 ? q+" ชิ้น" : "ระบุจำนวน";
+  closeModal("mIss");
+}
+function calc() {
+  const s=parseFloat(document.getElementById("qSent").value)||0, r=parseFloat(document.getElementById("qRej").value)||0, w=parseFloat(document.getElementById("qWst").value)||0, g=parseFloat(document.getElementById("qGd").value)||0;
+  document.getElementById("pRej").innerText = s>0 ? (r/s*100).toFixed(2)+"%" : "0.00%";
+  document.getElementById("pWst").innerText = s>0 ? (w/s*100).toFixed(2)+"%" : "0.00%";
+  document.getElementById("pGd").innerText = s>0 ? (g/s*100).toFixed(2)+"%" : "0.00%";
+}
+
+async function saveRec(e) {
+  e.preventDefault();
+  const editIdx = parseInt(document.getElementById("editIndex").value);
+  const rec = {
+    capaNo:document.getElementById("iCapa").value.trim(), receiveNo:document.getElementById("iRecNo").value.trim(),
+    jobNo:document.getElementById("iJob").value.trim(), jobName:document.getElementById("iJName").value.trim(),
+    customer:document.getElementById("iCus").value.trim(), supervisor:document.getElementById("iSup").value.trim(),
+    machine:document.getElementById("iMac").value, capaDueDate:document.getElementById("iDue").value,
+    qtySent:Number(document.getElementById("qSent").value)||0, qtyReject:Number(document.getElementById("qRej").value)||0,
+    qtyWaste:Number(document.getElementById("qWst").value)||0, qtyGood:Number(document.getElementById("qGd").value)||0,
+    issues:{...selIss}
+  };
+
+  if(editIdx >= 0) { recs[editIdx] = rec; alert("แก้ไขข้อมูลเรียบร้อยแล้ว!"); }
+  else { recs.unshift(rec); alert("บันทึกข้อมูลเรียบร้อยแล้ว!"); }
+
+  const u = localStorage.getItem("wg6_url");
+  if(u && editIdx < 0) { try { await fetch(u,{method:"POST",mode:"no-cors",body:JSON.stringify(rec)}); } catch(err){} }
+
+  clrForm(); goTab("list");
+}
+
+function editRecord(index) {
+  const r = recs[index];
+  document.getElementById("editIndex").value = index;
+  document.getElementById("formTitle").innerText = "✏️ แก้ไขข้อมูลรีเจ็ค (เคส: " + r.capaNo + ")";
+  document.getElementById("btnSubmit").innerText = "💾 บันทึกการแก้ไข";
+
+  document.getElementById("iCapa").value = r.capaNo;
+  document.getElementById("iRecNo").value = r.receiveNo || "";
+  document.getElementById("iJob").value = r.jobNo || "";
+  document.getElementById("iJName").value = r.jobName || "";
+  document.getElementById("iCus").value = r.customer || "";
+  document.getElementById("iSup").value = r.supervisor || "";
+  document.getElementById("iMac").value = r.machine || "";
+  document.getElementById("iDue").value = r.capaDueDate || "";
+  document.getElementById("qSent").value = r.qtySent || 0;
+  document.getElementById("qRej").value = r.qtyReject || 0;
+  document.getElementById("qWst").value = r.qtyWaste || 0;
+  document.getElementById("qGd").value = r.qtyGood || 0;
+
+  calc(); chkDue();
+  selIss = JSON.parse(JSON.stringify(r.issues || {}));
+  ISS.forEach((n, i) => {
+    const ck = document.getElementById(`ck-${i}`), box = document.getElementById(`ib-${i}`), btn = document.getElementById(`bd-${i}`);
+    if(selIss[n]) {
+      ck.checked = true; box.classList.add("sel"); btn.classList.remove("hide");
+      btn.innerText = (selIss[n].qty > 0) ? selIss[n].qty + " ชิ้น" : "ระบุจำนวน";
+    } else {
+      ck.checked = false; box.classList.remove("sel"); btn.classList.add("hide");
+    }
+  });
+  goTab("rec");
+}
+
+function deleteRecord(index) {
+  if(confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) {
+    recs.splice(index, 1); renderTableList(); draw(); alert("ลบรายการเรียบร้อยแล้ว");
+  }
+}
+
+function renderTableList() {
+  const tbody = document.getElementById("listTableBody");
+  if(!recs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:30px">ยังไม่มีรายการบันทึก</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = recs.map((r, idx) => {
+    const st = getStat(r);
+    return `
+      <tr>
+        <td><strong>${r.capaNo}</strong><br><small style="color:#64748b">${r.receiveNo||''}</small></td>
+        <td>${r.jobName || '-'}<br><small style="color:#64748b">${r.customer || '-'}</small></td>
+        <td><span style="background:#ede9fe;color:#5b21b6;padding:2px 6px;border-radius:4px;font-weight:600">${r.machine}</span></td>
+        <td><div>${r.capaDueDate || '-'}</div><span class="tag-due ${st==='เลยกำหนด'?'over':'ok'}">${st}</span></td>
+        <td>ส่ง: ${Number(r.qtySent||0).toLocaleString()}<br><span style="color:#dc2626">รีเจ็ค: ${Number(r.qtyReject||0).toLocaleString()}</span></td>
+        <td><div style="display:flex;gap:5px"><button type="button" class="btn btn-pri btn-sm" onclick="editRecord(${idx})">✏️</button><button type="button" class="btn btn-danger btn-sm" onclick="deleteRecord(${idx})">🗑️</button></div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function clrForm() {
+  document.getElementById("rForm").reset();
+  document.getElementById("editIndex").value = "-1";
+  document.getElementById("formTitle").innerText = "ฟอร์มบันทึกข้อมูลรีเจ็ค WG6";
+  document.getElementById("btnSubmit").innerText = "💾 บันทึกข้อมูลรีเจ็ค";
+  document.getElementById("dueHint").innerText=""; selIss={}; mkIss(); calc();
+}
+
+function draw() {
+  const fm=document.getElementById("fMac").value, fc=document.getElementById("fCus").value, fs=document.getElementById("fSup").value, fp=document.getElementById("fCap").value;
+  updOpt("fCus",[...new Set(recs.map(r=>r.customer))],"บริษัทลูกค้าทั้งหมด",fc);
+  updOpt("fSup",[...new Set(recs.map(r=>r.supervisor))],"หัวหน้าเครื่องทั้งหมด",fs);
+
+  const fl = recs.filter(r => (!fm||r.machine===fm) && (!fc||r.customer===fc) && (!fs||r.supervisor===fs) && (!fp||getStat(r)===fp));
+  const tr = fl.reduce((s,r)=>s+(Number(r.qtyReject)||0),0);
+  const aw = fl.length ? (fl.reduce((s,r)=>s+(r.qtySent>0?r.qtyWaste/r.qtySent*100:0),0)/fl.length).toFixed(2) : "0.00";
+  const ag = fl.length ? (fl.reduce((s,r)=>s+(r.qtySent>0?r.qtyGood/r.qtySent*100:0),0)/fl.length).toFixed(2) : "0.00";
+  let inDue=0, ov=0;
+  fl.forEach(r => { if(getStat(r)==="เลยกำหนด") ov++; else inDue++; });
+
+  document.getElementById("kRej").innerText = tr.toLocaleString();
+  document.getElementById("kWst").innerText = aw+"%";
+  document.getElementById("kGd").innerText = ag+"%";
+  document.getElementById("kInDue").innerText = inDue+" เคส";
+  document.getElementById("kOver").innerText = ov+" เคส";
+
+  const isum={}; fl.forEach(r=>{ if(r.issues) Object.entries(r.issues).forEach(([k,v])=>isum[k]=(isum[k]||0)+(Number(v.qty)||0)); });
+  const sIss = Object.entries(isum).sort((a,b)=>b[1]-a[1]);
+  bar("cTop", sIss.slice(0,5), true); bar("cAll", sIss, true);
+
+  const msum={}; fl.forEach(r=>msum[r.machine]=(msum[r.machine]||0)+(Number(r.qtyReject)||0));
+  bar("cMac", Object.entries(msum).sort((a,b)=>b[1]-a[1]), false, "#5b21b6");
+
+  const csum={}; fl.forEach(r=>csum[r.customer]=(csum[r.customer]||0)+(Number(r.qtyReject)||0));
+  bar("cCus", Object.entries(csum).sort((a,b)=>b[1]-a[1]), false, "#eab308");
+}
+function bar(id, arr, useCol, col) {
+  const el = document.getElementById(id);
+  if(!arr.length){ el.innerHTML=`<div style="color:#94a3b8;text-align:center;padding:20px;font-size:.85rem">ยังไม่มีข้อมูล</div>`; return; }
+  const mx = Math.max(...arr.map(d=>d[1]),1);
+  el.innerHTML = arr.map(([l,v])=>`<div class="brow"><div class="binfo"><span>${l}</span><span>${v.toLocaleString()} ชิ้น</span></div><div class="btrack"><div class="bfill" style="width:${Math.round(v/mx*100)}%;background:${useCol?(ICOL[l]||"#5b21b6"):col}"></div></div></div>`).join("");
+}
+function updOpt(id, arr, def, cur) {
+  const el=document.getElementById(id); el.innerHTML=`<option value="">${def}</option>`;
+  arr.filter(Boolean).forEach(v=>el.innerHTML+=`<option value="${v}">${v}</option>`); el.value=cur;
+}
+
+function updConn(st, msg) {
+  const d=document.getElementById("hDot"), t=document.getElementById("hTxt"), m=document.getElementById("mStat");
+  d.className="dot";
+  if(st==="ok"){ d.classList.add("ok"); t.innerText=msg||"เชื่อมต่อ Apps Script แล้ว"; m.innerHTML=`<span style="color:#059669;font-weight:600">🟢 เชื่อมต่อสำเร็จ (เรียลไทม์)</span>`; }
+  else if(st==="err"){ d.classList.add("err"); t.innerText="เชื่อมต่อไม่สำเร็จ"; m.innerHTML=`<span style="color:#dc2626;font-weight:600">🔴 เชื่อมต่อไม่สำเร็จ ตรวจสอบ URL/สิทธิ์</span>`; }
+  else { t.innerText="โหมดข้อมูลในเครื่อง"; m.innerHTML=`<span>⚪ ยังไม่ได้เชื่อมต่อ URL</span>`; }
+}
+async function syncData(notify) {
+  const u = localStorage.getItem("wg6_url");
+  if(!u){ updConn("local"); draw(); return; }
+  try {
+    const res = await fetch(u); const data = await res.json();
+    if(Array.isArray(data)){ if(data.length>0) recs=data; updConn("ok"); if(notify) alert("ดึงข้อมูลสำเร็จ ("+data.length+" รายการ)"); }
+  } catch(e){ updConn("err"); if(notify) alert("เชื่อมต่อ URL ไม่สำเร็จ ตรวจสอบสิทธิ์ Anyone ใน Apps Script"); }
+  draw(); renderTableList();
+}
+async function testConn() {
+  const u = document.getElementById("sUrl").value.trim();
+  if(!u){ alert("กรุณาวาง URL ก่อน"); return; }
+  document.getElementById("mStat").innerText = "⏳ กำลังทดสอบ...";
+  try { const res = await fetch(u); await res.json(); updConn("ok"); alert("เชื่อมต่อ Apps Script สำเร็จ!"); }
+  catch(e){ updConn("err"); alert("เชื่อมต่อไม่สำเร็จ! ตรวจสอบสิทธิ์ Deploy Web App เป็น 'ทุกคน (Anyone)'"); }
+}
+function copyCode() {
+  const box = document.getElementById("codeTxt"); box.select();
+  navigator.clipboard ? navigator.clipboard.writeText(box.value) : document.execCommand("copy");
+  alert("คัดลอกโค้ดเรียบร้อย!");
+}
+function saveSet() {
+  const u = document.getElementById("sUrl").value.trim();
+  if(u){ localStorage.setItem("wg6_url", u); syncData(false); } else { localStorage.removeItem("wg6_url"); updConn("local"); }
+  closeModal("mSet"); alert("บันทึกการตั้งค่าเรียบร้อย");
+}
+function upImg(e, type) {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev => {
+    if(type==="logo"){ localStorage.setItem("wg6_logo", ev.target.result); setLogo(ev.target.result); }
+    else { localStorage.setItem("wg6_bg", ev.target.result); document.getElementById("hdr").style.backgroundImage=`url('${ev.target.result}')`; }
+  };
+  rd.readAsDataURL(f);
+}
+function setLogo(s){ const i=document.getElementById("cLogo"); i.src=s; i.style.display="block"; document.getElementById("dLogo").style.display="none"; }
+function rstImg(){ localStorage.removeItem("wg6_logo"); localStorage.removeItem("wg6_bg"); document.getElementById("cLogo").style.display="none"; document.getElementById("dLogo").style.display="block"; document.getElementById("hdr").style.backgroundImage=""; alert("รีเซ็ตภาพแล้ว"); }
+</script>
+</body>
+</html># Reject_data
